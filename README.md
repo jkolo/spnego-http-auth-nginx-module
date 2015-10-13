@@ -44,6 +44,11 @@ These options are required.
 * `auth_gss_keytab`: absolute path-name to keytab file containing service
   credentials
 
+A useful optional option is
+* `auth_gss_nodeny`: on/off, set to off if you're going to pass on to another module
+  that will actually be doing the denying (eg: nginx_lua) when using the `satisfy all`
+  directive
+
 These options should ONLY be specified if you have a keytab containing
 privileged principals.  In nearly all cases, you should not put these
 in the configuration file, as `gss_accept_sec_context` will do the right

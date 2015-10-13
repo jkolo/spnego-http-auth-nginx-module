@@ -107,6 +107,7 @@ typedef struct {
 
 typedef struct {
     ngx_flag_t protect;
+    ngx_flag_t nodeny;
     ngx_str_t realm;
     ngx_str_t keytab;
     ngx_str_t srvcname;
@@ -129,6 +130,13 @@ static ngx_command_t ngx_http_auth_spnego_commands[] = {
         ngx_conf_set_flag_slot,
         NGX_HTTP_LOC_CONF_OFFSET,
         offsetof(ngx_http_auth_spnego_loc_conf_t, protect),
+        NULL},
+
+    {ngx_string("auth_gss_nodeny"),
+        SPNEGO_NGX_CONF_FLAGS,
+        ngx_conf_set_flag_slot,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        offsetof(ngx_http_auth_spnego_loc_conf_t, nodeny),
         NULL},
 
     {ngx_string("auth_gss_realm"),
@@ -226,6 +234,7 @@ ngx_http_auth_spnego_create_loc_conf(
     }
 
     conf->protect = NGX_CONF_UNSET;
+    conf->nodeny = NGX_CONF_UNSET;
     conf->fqun = NGX_CONF_UNSET;
     conf->force_realm = NGX_CONF_UNSET;
     conf->allow_basic = NGX_CONF_UNSET;
@@ -245,6 +254,7 @@ ngx_http_auth_spnego_merge_loc_conf(
 
     /* "off" by default */
     ngx_conf_merge_off_value(conf->protect, prev->protect, 0);
+    ngx_conf_merge_off_value(conf->nodeny, prev->nodeny, 0);
 
     ngx_conf_merge_str_value(conf->realm, prev->realm, "");
     ngx_conf_merge_str_value(conf->keytab, prev->keytab,
@@ -259,6 +269,8 @@ ngx_http_auth_spnego_merge_loc_conf(
 #if (NGX_DEBUG)
     ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "auth_spnego: protect = %i",
             conf->protect);
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "auth_spnego: nodeny = %i",
+            conf->nodeny);
     ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "auth_spnego: realm@0x%p = %s",
             conf->realm.data, conf->realm.data);
     ngx_conf_log_error(NGX_LOG_INFO, cf, 0,
@@ -411,6 +423,7 @@ ngx_http_auth_spnego_token(
                     token.data, (u_char *) "NTLM", sizeof("NTLM")) == 0) {
             spnego_log_error("Detected unsupported mechanism: NTLM");
         }
+        spnego_log_error("The larger if...");
         return NGX_DECLINED;
     }
 
@@ -1052,7 +1065,12 @@ ngx_http_auth_spnego_handler(
         ctx->ret = NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    if (ctx->ret == NGX_HTTP_UNAUTHORIZED && alcf->nodeny) {
+        ctx->ret = 0;
+    }
+
     spnego_debug3("SSO auth handling OUT: token.len=%d, head=%d, ret=%d",
             ctx->token.len, ctx->head, ctx->ret);
+
     return ctx->ret;
 }
