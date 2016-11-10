@@ -423,7 +423,6 @@ ngx_http_auth_spnego_token(
                     token.data, (u_char *) "NTLM", sizeof("NTLM")) == 0) {
             spnego_log_error("Detected unsupported mechanism: NTLM");
         }
-        spnego_log_error("The larger if...");
         return NGX_DECLINED;
     }
 
